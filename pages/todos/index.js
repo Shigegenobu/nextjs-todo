@@ -19,20 +19,25 @@ import AutorenewIcon from "@mui/icons-material/Autorenew";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
-import DatePickerDay from "../components/DatePickerDay";
 import { collection, getDocs, onSnapshot, getFirestore } from "firebase/firestore";
-import db from "@/service/firebase";
-import { blue } from "@mui/material/colors";
 
 const index = () => {
   const [todos, setTodos] = useState([]);
   const [filter, setFilter] = useState("all");
   const [filteredTodos, setFilteredTodos] = useState([]);
   const [searchId, setSearchId] = useState("");
-  const [sort, setSort] = useState({});
+  const [sortDirection, setSortDirection] = useState("asc");
+  const [sortCreateDirection, setSortCreateDirection] = useState("asc");
+  const [sortDeadlineDirection, setSortDeadlineDirection] = useState("asc");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const DataObject = [{ id: "id", create: "日時", deadline: "期限" }];
   const db = getFirestore();
+
+  const filteredById = searchId
+    ? filteredTodos.filter((todo) => todo.id.toLowerCase().includes(searchId))
+    : filteredTodos;
 
   // firebaseからデータを取得
   useEffect(() => {
@@ -45,7 +50,6 @@ const index = () => {
       // console.log(snapShot.docs.map((doc) => ({ ...doc.data() })));
       setTodos(snapShot.docs.map((doc) => ({ ...doc.data() })));
     });
-    console.log("mount");
 
     // リアルタイムで取得
     onSnapshot(todoData, (todo) => {
@@ -54,11 +58,11 @@ const index = () => {
   }, []);
 
   useEffect(() => {
-    console.log(todos);
+    // console.log(todos);
   }, [todos]);
 
   useEffect(() => {
-    console.log("依存関係の確認");
+    // console.log("依存関係の確認");
     const filteringTodos = () => {
       switch (filter) {
         case "notStarted":
@@ -77,12 +81,59 @@ const index = () => {
     filteringTodos();
   }, [filter, todos]);
 
-  const filteredById = searchId
-    ? filteredTodos.filter((todo) => todo.id.toLowerCase().includes(searchId))
-    : filteredTodos;
+  useEffect(() => {
+    const filterTodosByDate = () => {
+      const filteredByDate = todos.filter((todo) => {
+        // もし startDate と endDate が設定されている場合、期限がその範囲内かどうかを判定
+        if (startDate && endDate) {
+          return (
+            todo.deadline >= new Date(startDate).toISOString() &&
+            todo.deadline <= new Date(endDate).toISOString()
+          );
+        }
+        // startDate のみが設定されている場合、期限が startDate 以降かどうかを判定
+        if (startDate) {
+          return todo.deadline >= new Date(startDate).toISOString();
+        }
+        // endDate のみが設定されている場合、期限が endDate 以前かどうかを判定
+        if (endDate) {
+          return todo.deadline <= new Date(endDate).toISOString();
+        }
+        // startDate や endDate が設定されていない場合は絞り込まない
+        return true;
+      });
+      setFilteredTodos(filteredByDate);
+    };
+    filterTodosByDate();
+  }, [startDate, endDate, todos]);
 
-  const handleSortClick = (e) => {
-    console.log(e.target.value);
+  const handleSortClick = () => {
+    if (sortDirection === "asc") {
+      setSortDirection("desc"); // 現在の方向がascならばdescに変更
+      setFilteredTodos([...filteredTodos].sort((a, b) => b.id.localeCompare(a.id))); // IDを降順で並び替え
+    } else {
+      setSortDirection("asc"); // 現在の方向がdescならばascに変更
+      setFilteredTodos([...filteredTodos].sort((a, b) => a.id.localeCompare(b.id))); // IDを昇順で並び替え
+    }
+  };
+
+  const handleCreateClick = () => {
+    if (sortCreateDirection === "asc") {
+      setSortCreateDirection("desc"); // 現在の方向がascならばdescに変更
+      setFilteredTodos([...filteredTodos].sort((a, b) => b.id.localeCompare(a.id))); // deadlineを降順で並び替え
+    } else {
+      setSortCreateDirection("asc"); // 現在の方向がdescならばascに変更
+      setFilteredTodos([...filteredTodos].sort((a, b) => a.id.localeCompare(b.id))); // deadlineを昇順で並び替え
+    }
+  };
+  const handleDeadlineClick = () => {
+    if (sortDeadlineDirection === "asc") {
+      setSortDeadlineDirection("desc"); // 現在の方向がascならばdescに変更
+      setFilteredTodos([...filteredTodos].sort((a, b) => b.id.localeCompare(a.id))); // deadlineを降順で並び替え
+    } else {
+      setSortDeadlineDirection("asc"); // 現在の方向がdescならばascに変更
+      setFilteredTodos([...filteredTodos].sort((a, b) => a.id.localeCompare(b.id))); // deadlineを昇順で並び替え
+    }
   };
 
   return (
@@ -100,8 +151,6 @@ const index = () => {
       </Box>
 
       <Box>
-        <button onClick={() => handleSort("asc")}>ID昇順</button>
-        <button onClick={() => handleSort("desc")}>ID降順</button>
         <dl style={{ display: `flex` }}>
           <AutorenewIcon></AutorenewIcon>
           <dt>ステータス</dt>
@@ -125,7 +174,7 @@ const index = () => {
             <TextField
               id="standard-basic"
               label="半角入力してください"
-              autoComplete='off'
+              autoComplete="off"
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
             />
@@ -135,18 +184,48 @@ const index = () => {
           <CalendarMonthIcon></CalendarMonthIcon>
           <dt style={{ margin: `30px 32px` }}>期限</dt>
           <dd style={{ display: `flex` }}>
-            <DatePickerDay />
-            <p style={{ margin: `30px 0px` }}>〜</p>
-            <DatePickerDay />
+            <TextField
+              id="date"
+              type="date"
+              sx={{ width: 200 }}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <p style={{ margin: `15px` }}>〜</p>
+            <TextField
+              id="date"
+              type="date"
+              sx={{ width: 200 }}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
           </dd>
         </dl>
+
+        <Box sx={{ my: 2, display: "flex", justifyContent: "space-evenly", width: 300 }}>
+          <Box>
+            <button onClick={() => handleSortClick()}>
+              {sortDirection === "asc" ? "ID昇順" : "ID降順"}
+            </button>
+          </Box>
+          <Box>
+            <button onClick={() => handleCreateClick()}>
+              {sortCreateDirection === "asc" ? "日時昇順" : "日時降順"}
+            </button>
+          </Box>
+          <Box>
+            <button onClick={() => handleDeadlineClick()}>
+              {sortDeadlineDirection === "asc" ? "期限昇順" : "期限降順"}
+            </button>
+          </Box>
+        </Box>
       </Box>
 
       <TableContainer component={Paper} sx={{ minWidth: 0 }}>
         <Table sx={{ minWidth: 650 }} aria-label="simple table">
           <TableHead>
             {DataObject.map((data) => (
-              <TableRow key={data.id} onClick={handleSortClick}>
+              <TableRow key={data.id}>
                 <TableCell sx={{ color: "blue" }}>{data.id}</TableCell>
                 <TableCell>タイトル</TableCell>
                 <TableCell>内容</TableCell>
@@ -168,7 +247,8 @@ const index = () => {
                 </TableCell>
                 <TableCell>{todo.contents}</TableCell>
                 <TableCell>{todo.status}</TableCell>
-                <TableCell>{Date()}</TableCell>
+                <TableCell>{todo.created_at.toDate().toLocaleString()}</TableCell>
+                <TableCell>{todo.deadline}</TableCell>
               </TableRow>
             ))}
           </TableBody>

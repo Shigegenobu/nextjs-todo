@@ -1,7 +1,6 @@
 import { Box, Button, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
-import db from "@/service/firebase";
 import {
   Timestamp,
   collection,
@@ -13,13 +12,15 @@ import {
 } from "firebase/firestore";
 
 import { useRouter } from "next/router";
+import { addWeeks, formatISO } from "date-fns";
 
 const create = () => {
   const [todos, setTodos] = useState([]);
   const [title, setTitle] = useState("");
   const [contents, setContents] = useState("");
   const [status, setStatus] = useState("");
-  // const [date, setDate] = useState("");
+  const [deadline, setDeadline] = useState("");
+
   const router = useRouter();
   const db = getFirestore();
 
@@ -35,11 +36,15 @@ const create = () => {
     setStatus(e.target.value);
   };
 
+  const handleDateFormChanges = (e) => {
+    setDeadline(e.target.value);
+  };
+
   const resetInput = () => {
     setTitle("");
     setContents("");
     setStatus("");
-    // setDate("");
+    setDeadline("");
   };
 
   const handleClick = async (e) => {
@@ -50,7 +55,6 @@ const create = () => {
 
     // new Doc create(追加する)
     const newDoc = doc(collection(db, "todos"));
-    // console.log(newDoc)
 
     // Firestore save
     await setDoc(newDoc, {
@@ -59,7 +63,7 @@ const create = () => {
       status: status,
       contents: contents,
       created_at: Timestamp.now(),
-      // date: date,
+      deadline: deadline,
     })
       .then(() => {
         alert("保存完了");
@@ -88,8 +92,13 @@ const create = () => {
   }, []);
 
   useEffect(() => {
+    const defaultDate = formatISO(addWeeks(new Date(), 1), { representation: "date" });
+    setDeadline(defaultDate);
+  }, []);
+
+  useEffect(() => {
     console.log(todos);
-  }, [todos]);
+  }, [todos, deadline]);
 
   return (
     <>
@@ -98,7 +107,7 @@ const create = () => {
         <p>新規todoを追加</p>
         <Box sx={{ border: 1, borderRadius: 1, borderColor: "text.primary" }}>
           <Box>
-            <Box sx={{ bgcolor: "#c2eafc", display: "flex"}}>
+            <Box sx={{ bgcolor: "#c2eafc", display: "flex" }}>
               <p style={{ padding: `10px 35px 10px 10px`, width: `100px` }}>タイトル</p>
               <TextField
                 id="standard-basic"
@@ -106,7 +115,7 @@ const create = () => {
                 margin="dense"
                 variant="standard"
                 fullWidth
-                autoComplete='off'
+                autoComplete="off"
                 value={title}
                 onChange={handleTitleFormChanges}
               />
@@ -119,7 +128,7 @@ const create = () => {
                 margin="dense"
                 variant="outlined"
                 fullWidth
-                autoComplete='off'
+                autoComplete="off"
                 value={contents}
                 onChange={handleContentsFormChanges}
               />
@@ -142,6 +151,16 @@ const create = () => {
                   <MenuItem value="全て">全て</MenuItem>
                 </Select>
               </FormControl>
+            </Box>
+            <Box sx={{ bgcolor: "#f8d8d8", display: "flex" }}>
+              <p style={{ margin: `20px 35px 0px 10px` }}>期限</p>
+              <TextField
+                id="date"
+                type="date"
+                value={deadline}
+                onChange={handleDateFormChanges}
+                sx={{ width: 200 }}
+              />
             </Box>
           </Box>
         </Box>

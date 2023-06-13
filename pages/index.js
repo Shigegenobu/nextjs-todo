@@ -2,7 +2,6 @@ import Head from "next/head";
 import Link from "next/link";
 import GoogleButton from "./components/GoogleButton";
 import { Container } from "@mui/material";
-import { AuthProvider } from "./context/AuthContext";
 
 export default function Home() {
   return (
@@ -11,8 +10,7 @@ export default function Home() {
         <title>todoリスト</title>
       </Head>
 
-      <AuthProvider>
-        <ul>
+      <ul>
         <li>
           <Link href="/SignUp">サインアップ</Link>
         </li>
@@ -23,9 +21,8 @@ export default function Home() {
           <Link href="/Mypage">マイページ</Link>
         </li>
       </ul>
-      </AuthProvider>
 
-      <GoogleButton />
+      {/* <GoogleButton /> */}
 
       <Container>
         <Link href="/todos/">todosページへいく</Link>

@@ -1,14 +1,5 @@
-import db from "@/service/firebase";
-import {
-  Box,
-  Button,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, FormControl, MenuItem, Select, TextField, Typography } from "@mui/material";
+import { addWeeks, formatISO } from "date-fns";
 import { doc, getDoc, getFirestore, updateDoc } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -19,6 +10,7 @@ const todoedit = () => {
   const [selectStatus, setSelectStatus] = useState("");
   const [todosEditTitle, setTodosEditTitle] = useState("");
   const [todosEditContents, setTodosEditContents] = useState("");
+  const [todosEditDeadline, setTodosEditDeadline] = useState("");
 
   const router = useRouter();
   // console.log(router);
@@ -36,10 +28,14 @@ const todoedit = () => {
     setTodosEditContents(e.target.value);
   };
 
+  const handleEditDateFormChanges = (e) => {
+    setTodosEditDeadline(e.target.value);
+  };
+
   const handleSaveClick = async () => {
     if (!todosEditTitle || !todosEditContents || !selectStatus) {
       alert("タイトルor内容or状態が空です");
-      return;p
+      return;
     }
     try {
       const newDocRef = doc(db, "todos", router.query.id);
@@ -47,6 +43,7 @@ const todoedit = () => {
         title: todosEditTitle,
         contents: todosEditContents,
         status: selectStatus,
+        deadline: todosEditDeadline,
       });
       console.log("保存されました");
       // 保console存後のリダイレクト処理
@@ -64,10 +61,19 @@ const todoedit = () => {
       docSnap.then((ref) => {
         // console.log(ref);
         setTodosId(ref.data());
-        console.log(ref.data());
+        // console.log(ref.data());
       });
     }
   }, [router]);
+
+  useEffect(() => {
+    setTodosEditTitle(todosId.title || "");
+    setTodosEditContents(todosId.contents || "");
+    setSelectStatus(todosId.status || "");
+
+    const defaultDate = formatISO(addWeeks(new Date(), 1), { representation: "date" });
+    setTodosEditDeadline(defaultDate);
+  }, [todosId]);
 
   return (
     <>
@@ -80,31 +86,19 @@ const todoedit = () => {
               <Typography variant="p" display="block" sx={{ backgroundColor: "orange" }}>
                 タイトル
               </Typography>
-              <TextField
-                // placeholder={todosId.title}
-                placeholder={todosId.title}
-                value={todosEditTitle}
-                fullWidth
-                onChange={handleEditTitleChange}
-              />
+              <TextField value={todosEditTitle} fullWidth onChange={handleEditTitleChange} />
             </Box>
             <Box sx={{ border: "1px dashed grey", m: 1 }}>
               <Typography variant="p" display="block" sx={{ backgroundColor: "orange" }}>
                 内容
               </Typography>
-              <TextField
-                placeholder={todosId.contents}
-                value={todosEditContents}
-                onChange={handleEditContentsChange}
-                fullWidth
-              />
+              <TextField value={todosEditContents} onChange={handleEditContentsChange} fullWidth />
             </Box>
             <Box sx={{ border: "1px dashed grey", m: 1 }}>
               <Typography variant="p" display="block" sx={{ backgroundColor: "orange" }}>
                 状態
               </Typography>
               <FormControl sx={{ minWidth: 200 }}>
-                <InputLabel id="simple-select-autowidth-label">{todosId.status}</InputLabel>
                 <Select
                   labelId="simple-select-autowidth-label"
                   id="simple-select-autowidth-label"
@@ -119,6 +113,17 @@ const todoedit = () => {
                   <MenuItem value="全て">全て</MenuItem>
                 </Select>
               </FormControl>
+            </Box>
+
+            <Box sx={{ bgcolor: "#f8d8d8", display: "flex" }}>
+              <p style={{ margin: `20px 35px 0px 10px` }}>期限</p>
+              <TextField
+                id="date"
+                type="date"
+                value={todosEditDeadline}
+                onChange={handleEditDateFormChanges}
+                sx={{ width: 200 }}
+              />
             </Box>
 
             <Button variant="contained" sx={{ m: 1 }} onClick={handleSaveClick}>

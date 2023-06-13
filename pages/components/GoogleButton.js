@@ -1,8 +1,10 @@
-import { auth } from "@/service/firebase";
+import { auth, provider } from "@/service/firebase";
 import { Box, Button } from "@mui/material";
 import React from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import Mypage from "../Mypage";
+import { signInWithPopup } from "firebase/auth";
+import { useRouter } from "next/router";
 
 export default function GoogleButton() {
   const [user] = useAuthState(auth);
@@ -23,9 +25,16 @@ export default function GoogleButton() {
 
 //Googleボタンでサインイン
 function SignInButton() {
+  const router = useRouter();
   const signInWithGoogle = () => {
     //firebaseを使ってサインインする
-    signInWithPopup(auth, provider);
+    signInWithPopup(auth, provider)
+      .then(() => {
+        router.push("/Mypage");
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
   return (
     <>

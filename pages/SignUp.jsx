@@ -1,44 +1,75 @@
-import React from "react";
-import { Box, Button, Container, Stack, TextField, Typography } from "@mui/material";
+import React, { useState } from "react";
+import { Box, Button, Container, Stack, TextField } from "@mui/material";
 import Link from "next/link";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/service/firebase";
-import { useAuthContext } from "./context/AuthContext";
+import { createUserWithEmailAndPassword, getAuth ,updateProfile} from "firebase/auth";
 import { useRouter } from "next/router";
 
 const SignUp = () => {
+  const auth = getAuth();
   const router = useRouter();
-  const handleSubmit = (event) => {
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
     console.log("登録");
+
     const { email, password } = event.target.elements;
-    // const { email, password, userName } = event.target.elements;
-    createUserWithEmailAndPassword(auth, email.value, password.value)
-      .then((userCredential) => {
-        // ユーザー登録すると自動的にログインされてuserCredential.userでユーザーの情報を取得できる
-        const user = userCredential.user;
-        // ユーザー登録ができたかどうかをわかりやすくするためのアラート
-        alert("登録完了！");
-        console.log(user);
-        // // ユーザー名の保存などの処理を行う
-        // ユーザー名の保存
-        // const userId = user.uid; // ユーザーのUIDを取得
-        // const userNameValue = userName.value.trim();
 
-        // // Firebase Realtime Databaseにユーザー名を保存
-        // const usersRef = database.ref("users"); // "users"という参照を取得
-        // usersRef.child(userId).set({
-        //   // ユーザーIDをキーにしてデータを保存
-        //   userName: userNameValue,
-        // });
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    try {
+      // ユーザー作成
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email.value,
+        password.value
+      );
+      const user = userCredential.user;
 
-    console.log(email.value, password.value);
-    // console.log(email.value, password.value, userName.value);
-    router.push("/Signin");
+      // ユーザー名を設定
+      const displayName = ""; // ユーザー名を空の文字列に設定
+      await updateProfile(user, { displayName });
+
+      // ユーザー作成が成功した場合の処理
+      console.log("ユーザーが作成されました");
+      router.push("/Signin");
+    } catch (error) {
+      // ユーザー作成が失敗した場合の処理
+      console.error(error);
+      switch (error.code) {
+        case "auth/invalid-email":
+          setError("正しいメールアドレスの形式で入力してください。");
+          break;
+        case "auth/weak-password":
+          setError("パスワードは6文字以上を設定する必要があります。");
+          break;
+        case "auth/email-already-in-use":
+          setError("そのメールアドレスは登録済みです。");
+          break;
+        default:
+          setError("メールアドレスかパスワードに誤りがあります。");
+          break;
+      }
+    }
+
+    // createUserWithEmailAndPassword(auth, email.value, password.value).catch((error) => {
+    //   console.error(error);
+    //   switch (error.code) {
+    //     case "auth/invalid-email":
+    //       setError("正しいメールアドレスの形式で入力してください。");
+    //       break;
+    //     case "auth/weak-password":
+    //       setError("パスワードは6文字以上を設定する必要があります。");
+    //       break;
+    //     case "auth/email-already-in-use":
+    //       setError("そのメールアドレスは登録済みです。");
+    //       break;
+    //     default:
+    //       setError("メールアドレスかパスワードに誤りがあります。");
+    //       break;
+    //   }
+    // });
+
+    // console.log(email.value, password.value);
+    // router.push("/Signin");
   };
 
   return (
@@ -46,6 +77,7 @@ const SignUp = () => {
       <Container maxWidth="md" sx={{ pt: 5 }}>
         <h2>登録ページ</h2>
         <form onSubmit={handleSubmit}>
+          {error && <p style={{ color: "red" }}>{error}</p>}
           <Stack spacing={2}>
             <p>メールアドレス</p>
             <TextField
@@ -67,16 +99,6 @@ const SignUp = () => {
               name="password"
               type="password"
             />
-            {/* <p>ユーザー名</p>
-            <TextField
-              id="userName"
-              label="ユーザー名を入力してください"
-              variant="outlined"
-              fullWidth
-              autoComplete="off"
-              name="userName"
-              type="text"
-            /> */}
 
             <Box sx={{ mt: 2 }}>
               <Button variant="contained" size="large" type="submit">
