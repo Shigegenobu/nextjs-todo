@@ -119,20 +119,29 @@ const index = () => {
 
   const handleCreateClick = () => {
     if (sortCreateDirection === "asc") {
-      setSortCreateDirection("desc"); // 現在の方向がascならばdescに変更
-      setFilteredTodos([...filteredTodos].sort((a, b) => b.id.localeCompare(a.id))); // deadlineを降順で並び替え
+      setSortCreateDirection("desc");
+      setFilteredTodos(
+        [...filteredTodos].sort(
+          (a, b) => b.created_at.toDate().getTime() - a.created_at.toDate().getTime()
+        )
+      ); // createを降順で並び替え
     } else {
-      setSortCreateDirection("asc"); // 現在の方向がdescならばascに変更
-      setFilteredTodos([...filteredTodos].sort((a, b) => a.id.localeCompare(b.id))); // deadlineを昇順で並び替え
+      setSortCreateDirection("asc");
+      setFilteredTodos(
+        [...filteredTodos].sort(
+          (a, b) => a.created_at.toDate().getTime() - b.created_at.toDate().getTime()
+        )
+      ); // createを昇順で並び替え
     }
   };
+
   const handleDeadlineClick = () => {
     if (sortDeadlineDirection === "asc") {
-      setSortDeadlineDirection("desc"); // 現在の方向がascならばdescに変更
-      setFilteredTodos([...filteredTodos].sort((a, b) => b.id.localeCompare(a.id))); // deadlineを降順で並び替え
+      setSortDeadlineDirection("desc");
+      setFilteredTodos([...filteredTodos].sort((a, b) => b.deadline.localeCompare(a.deadline))); // deadlineを降順で並び替え
     } else {
-      setSortDeadlineDirection("asc"); // 現在の方向がdescならばascに変更
-      setFilteredTodos([...filteredTodos].sort((a, b) => a.id.localeCompare(b.id))); // deadlineを昇順で並び替え
+      setSortDeadlineDirection("asc");
+      setFilteredTodos([...filteredTodos].sort((a, b) => a.deadline.localeCompare(b.deadline))); // deadlineを昇順で並び替え
     }
   };
 
@@ -231,7 +240,9 @@ const index = () => {
                 <TableCell>内容</TableCell>
                 <TableCell>状態</TableCell>
                 <TableCell sx={{ color: "blue" }}>{data.create}</TableCell>
-                <TableCell sx={{ color: "blue" }}>{data.deadline}</TableCell>
+                <TableCell sx={{ color: "blue" }}>
+                  {data.deadline}(期限が過ぎたら、赤文字)
+                </TableCell>
               </TableRow>
             ))}
           </TableHead>
@@ -248,7 +259,14 @@ const index = () => {
                 <TableCell>{todo.contents}</TableCell>
                 <TableCell>{todo.status}</TableCell>
                 <TableCell>{todo.created_at.toDate().toLocaleString()}</TableCell>
-                <TableCell>{todo.deadline}</TableCell>
+                {/* <TableCell>{todo.deadline}</TableCell> */}
+                <TableCell>
+                  {new Date(todo.deadline) < new Date() ? (
+                    <span style={{ color: "red" }}>{todo.deadline}</span>
+                  ) : (
+                    <span style={{ color: "black" }}>{todo.deadline}</span>
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
